@@ -1,0 +1,434 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Airplane Anatomy 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<style>
+/* Layout: hangar-floor 3D viewport on the left, a spec-sheet panel on the right; stacks on phones. Single dark look by design. */
+:root{
+  --bg:#0a1520; --panel:#0f2131; --raise:#15293c; --line:#25425d;
+  --fg:#e3ecf4; --muted:#9db3c8; --accent:#f0b145; --coral:#ef8a68; --ink:#0a1520;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px}
+.app{box-sizing:border-box;height:100%;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 384px;gap:16px}
+.viewport{position:relative;min-height:0;min-width:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}
+.viewport canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.viewport canvas:active{cursor:grabbing}
+.hint{position:absolute;left:14px;top:12px;margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted);background:rgba(10,21,32,.72);padding:6px 10px;border-radius:6px;pointer-events:none;max-width:calc(100% - 28px)}
+.tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{pointer-events:auto;position:absolute;left:0;top:0;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;border:2px solid var(--ink);background:var(--accent);color:var(--ink);font-family:var(--display);font-weight:700;font-size:15px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(0,0,0,.45)}
+.tag.prop{background:var(--coral)}
+.tag[aria-pressed="true"]{outline:3px solid var(--fg);outline-offset:1px}
+.tag:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+.tip{position:absolute;pointer-events:none;font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.04em;text-transform:uppercase;background:var(--raise);border:1px solid var(--line);color:var(--fg);padding:4px 10px;border-radius:5px;white-space:nowrap}
+.toolbar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px;border-radius:8px;background:rgba(15,33,49,.9);border:1px solid var(--line)}
+.btn{font-family:var(--body);font-size:13px;font-weight:600;color:var(--fg);background:var(--raise);border:1px solid var(--line);border-radius:6px;min-height:36px;padding:0 12px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn:focus-visible,.part:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);color:var(--ink);border-color:var(--accent);min-width:104px}
+.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+.seg{display:flex;gap:4px}
+.slider{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--muted);flex:1 1 160px;min-width:140px}
+.slider input{flex:1;accent-color:var(--accent)}
+.panel{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.eyebrow{margin:0;font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.card h1,.card h2{margin:0;font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.03em;line-height:.95;color:#fff;text-wrap:balance}
+.card h1{font-size:44px}
+.card h2{font-size:34px}
+.head{display:flex;align-items:center;gap:12px}
+.badge{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--ink);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:19px}
+.badge.prop{background:var(--coral)}
+.root{margin:0;font-family:var(--mono);font-size:13px;line-height:19px;color:var(--accent)}
+.row{margin:0;font-size:14.5px;line-height:21px;color:var(--fg)}
+.row b{display:block;font-size:11px;letter-spacing:.14em;color:var(--muted);font-weight:600;margin-bottom:2px}
+.list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.part{width:100%;display:flex;align-items:center;gap:8px;text-align:left;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--fg);font-family:var(--body);font-size:13.5px;min-height:38px;padding:4px 8px;cursor:pointer}
+.part:hover{background:var(--raise)}
+.part[aria-pressed="true"]{background:var(--raise);border-color:var(--accent)}
+.part .n{flex:none;width:22px;font-family:var(--mono);font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:2px;display:inline-block}
+.axes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.axes div{font-size:13px;line-height:18px}
+.axes strong{display:block;font-family:var(--display);font-size:20px;letter-spacing:.04em;color:#fff}
+.axes em{display:block;font-style:normal;font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-top:2px}
+.err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted)}
+@media (max-width:880px){
+  .app{height:auto;grid-template-columns:minmax(0,1fr)}
+  .viewport{height:64vh;min-height:380px}
+  .panel{overflow:visible}
+  .card h1{font-size:38px}
+}
+@media (max-width:420px){.list{grid-template-columns:minmax(0,1fr)}.axes{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="app">
+  <section class="viewport" id="viewport" aria-label="Interactive 3D airplane model">
+    <canvas id="c"></canvas>
+    <div class="tags" id="tags"></div>
+    <div class="tip" id="tip" hidden></div>
+    <p class="hint">Drag to orbit · Right-drag or two fingers to pan · Scroll or pinch to zoom · Click a part</p>
+    <div class="toolbar">
+      <button class="btn primary" id="explodeBtn" type="button">Explode</button>
+      <label class="slider" for="sep">Separation <input id="sep" type="range" min="0" max="100" value="0"></label>
+      <div class="seg" role="group" aria-label="Camera views">
+        <button class="btn" type="button" data-view="iso">3/4</button>
+        <button class="btn" type="button" data-view="top">Top</button>
+        <button class="btn" type="button" data-view="side">Side</button>
+        <button class="btn" type="button" data-view="front">Front</button>
+      </div>
+      <button class="btn" id="labelsBtn" type="button" aria-pressed="true">Labels</button>
+      <button class="btn" id="spinBtn" type="button" aria-pressed="false">Rotate</button>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <article class="card" id="info" aria-live="polite"></article>
+    <section class="card">
+      <p class="eyebrow">Components</p>
+      <ul class="list" id="list"></ul>
+      <div class="legend">
+        <span><i style="background:#c7d2dc"></i>Structure</span>
+        <span><i style="background:#f0b145"></i>Control &amp; high-lift</span>
+        <span><i style="background:#ef8a68"></i>Propulsion</span>
+      </div>
+    </section>
+    <section class="card">
+      <p class="eyebrow">Three axes, through the center of gravity</p>
+      <div class="axes">
+        <div><strong>ROLL</strong>Nose-to-tail axis · ailerons<em>Lat. rotula, “little wheel”</em></div>
+        <div><strong>PITCH</strong>Wingtip-to-wingtip · elevator<em>ME picchen, “to thrust, set”</em></div>
+        <div><strong>YAW</strong>Vertical axis · rudder<em>nautical, 1500s; origin unknown</em></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+const PARTS = {
+  radome:{n:1,name:'Radome & Cockpit',zoom:10,root:'radome = radar + dome (1940s) · cockpit ← 1580s pit for cockfighting, later a warship’s junior-officers’ quarters',
+    use:'The nose cone houses the weather radar; behind it the flight deck holds the crew, instruments and controls.',
+    quirk:'The radome is fiberglass or composite, not aluminum. Metal would block the radar beam.',
+    aero:'Sets the stagnation point where the flow splits. A smooth taper lets pressure recover gently so the boundary layer stays attached.'},
+  pitot:{n:2,name:'Pitot Tube',zoom:6,root:'eponym · Henri Pitot, French engineer who used one to gauge the Seine’s current in 1732',
+    use:'Senses total pressure. Paired with static ports it gives airspeed from q = pₜ − pₛ = ½ρV².',
+    quirk:'Electrically heated against ice. Iced-over pitots fed false airspeeds in the 2009 Air France 447 accident.',
+    aero:'Measures the flow rather than shaping it, so it is mounted where local flow is clean and the reading tracks the freestream.'},
+  fuselage:{n:3,name:'Fuselage',zoom:26,root:'Fr. fuselé “spindle-shaped” ← fuseau “spindle” ← Lat. fusus',
+    use:'The structural backbone. It carries crew and payload and ties the wings to the tail.',
+    quirk:'Semi-monocoque: the skin itself carries load. As a pressure vessel, every pressurization cycle counts against its fatigue life.',
+    aero:'Little lift, lots of skin-friction and form drag. A high fineness ratio (long and slender) keeps parasite drag down.'},
+  wing:{n:4,name:'Wing · Airfoil',zoom:22,root:'wing ← ON vængr · airfoil = air + foil ← Lat. folium “leaf”',
+    use:'Makes the lift, L = ½ρV²S·C_L. The wing box inside also holds most of the fuel.',
+    quirk:'A “wet wing” puts fuel weight right where the lift is, relieving the bending moment at the root.',
+    aero:'Camber and angle of attack set lift. Sweep delays shocks near Mach 1, high aspect ratio cuts induced drag, and dihedral adds roll stability.'},
+  slats:{n:5,name:'Leading-Edge Slats',zoom:12,root:'slat ← OFr. esclat “splinter, fragment” (modern éclat)',
+    use:'Slide forward and down off the leading edge for takeoff and landing.',
+    quirk:'Early Handley Page automatic slats needed no actuator. Suction at high angle of attack pulled them open.',
+    aero:'The slot feeds high-energy air over the upper surface, keeping flow attached and pushing the stall to a higher angle of attack.'},
+  flaps:{n:6,name:'Flaps',zoom:12,root:'ME flappe, imitative of the sound of a slap',
+    use:'Trailing-edge high-lift devices for slow flight: takeoff, approach and landing.',
+    quirk:'Fowler flaps roll aft on tracks before drooping, adding area as well as camber.',
+    aero:'Raise C_L,max and lower stall speed, at the cost of drag and a nose-down pitching moment the tail must trim out.'},
+  spoilers:{n:7,name:'Spoilers',zoom:11,root:'spoil ← OFr. espoillier ← Lat. spoliare “to strip, plunder”',
+    use:'Upper-surface panels that rise to dump lift: speedbrake in flight, roll assist, ground spoilers at touchdown.',
+    quirk:'On landing they deploy automatically, shifting weight onto the wheels so the brakes can grip.',
+    aero:'Deliberately separate the flow over part of the span, spoiling lift and adding drag.'},
+  ailerons:{n:8,name:'Ailerons',zoom:11,root:'Fr. aileron “little wing” ← aile “wing” ← Lat. ala',
+    use:'Deflect in opposite directions to roll the airplane about its longitudinal axis.',
+    quirk:'Adverse yaw: the down aileron makes more lift and more induced drag, pulling the nose away from the turn. Rudder, differential or Frise ailerons cancel it.',
+    aero:'Change local camber so lift becomes asymmetric across the span.'},
+  winglet:{n:9,name:'Winglet',zoom:8,root:'wing + -let (diminutive) · developed by NASA’s Richard Whitcomb in the 1970s',
+    use:'An upturned tip that recovers energy otherwise lost to the wingtip vortex.',
+    quirk:'Pays off most on long cruise legs. On short hops its weight and extra wing bending can eat the gain.',
+    aero:'High-pressure air under the wing curls around the tip to the low-pressure top. The winglet weakens that vortex, cutting induced drag much like extra span.'},
+  nacelle:{n:10,name:'Nacelle & Pylon',zoom:11,prop:true,root:'nacelle ← Fr. “small boat” ← Lat. navicella ← navis “ship” · pylon ← Gk. pylōn “gateway”',
+    use:'The nacelle fairs the engine; the pylon hangs it ahead of and below the wing.',
+    quirk:'In a high-bypass turbofan most thrust comes from the fan, not the core. Engine mass hung forward also helps damp wing flutter.',
+    aero:'Supplies thrust but adds interference drag at the wing–pylon joint. Small nacelle strakes shed a vortex that keeps flow on the wing at high angle of attack.'},
+  gear:{n:11,name:'Landing Gear',zoom:12,root:'a.k.a. undercarriage · gear ← ON gervi “equipment” · oleo strut ← Lat. oleum “oil”',
+    use:'Carries the airplane on the ground, absorbs touchdown, steers (nose gear) and brakes (mains).',
+    quirk:'Oleo-pneumatic struts push oil through an orifice against compressed nitrogen: a spring and a damper in one tube.',
+    aero:'Extended, it is a major parasite-drag source. That is why fast airplanes retract it, and why lowering it helps slow down on approach.'},
+  empennage:{n:12,name:'Empennage',zoom:16,root:'Fr. empenner “to feather an arrow” ← penne “feather” ← Lat. penna',
+    use:'The whole tail group: horizontal and vertical stabilizers plus their control surfaces.',
+    quirk:'Named for arrow fletching, and it works the same way, putting area far behind the center of gravity.',
+    aero:'On its long moment arm, any disturbance creates a restoring moment that weathervanes the nose back to the relative wind: static stability in pitch and yaw.'},
+  hstab:{n:13,name:'Horizontal Stabilizer & Elevator',zoom:11,root:'stabilizer ← Lat. stabilis “standing firm” · elevator ← Lat. elevare “to lift up” ← levis “light”',
+    use:'The stabilizer gives pitch stability; the elevator controls pitch about the lateral axis.',
+    quirk:'On most airliners the tail pushes down to balance a nose-heavy layout, and the whole stabilizer moves to trim.',
+    aero:'That down-load means the wing must lift slightly more than the airplane weighs, a penalty called trim drag.'},
+  fin:{n:14,name:'Vertical Stabilizer & Rudder',zoom:12,root:'fin ← OE finn · rudder ← OE rōþor “paddle, oar”',
+    use:'The fin gives directional stability; the rudder controls yaw about the vertical axis.',
+    quirk:'The rudder doesn’t turn the airplane; banking does. It coordinates turns, fights crosswinds, and is sized to hold an engine-out.',
+    aero:'A symmetric airfoil set on edge: sideslip gives it an angle of attack, and its side force swings the nose back into the wind.'}
+};
+const ORDER = Object.keys(PARTS).sort((a,b)=>PARTS[a].n-PARTS[b].n);
+const EMP = new Set(['hstab','fin','empennage']);
+
+const info = document.getElementById('info');
+const list = document.getElementById('list');
+let sel = null, hover = null;
+
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderInfo(){
+  if(!sel){
+    info.innerHTML = '<p class="eyebrow">Exploded assembly · swept-wing twin</p><h1>Anatomy of an Airplane</h1>'+
+      '<p class="root">airplane ← Fr. aéroplane ← Gk. aēr “air” + planos “wandering” (or Fr. planer, “to glide”)</p>'+
+      '<p class="row">Fourteen components of a twin-engine transport. Pick a part on the model or in the list to see where its name comes from, what it does, and how it shapes the airflow. Use <b style="display:inline;font-size:inherit;letter-spacing:0;color:var(--accent)">Explode</b> to pull the airframe apart along its attachment lines and back again.</p>';
+    return;
+  }
+  const p = PARTS[sel];
+  info.innerHTML = '<div class="head"><span class="badge'+(p.prop?' prop':'')+'">'+p.n+'</span><p class="eyebrow">Component '+p.n+' of 14</p></div>'+
+    '<h2>'+esc(p.name)+'</h2><p class="root">'+esc(p.root)+'</p>'+
+    '<p class="row"><b>USE</b>'+esc(p.use)+'</p><p class="row"><b>QUIRK</b>'+esc(p.quirk)+'</p><p class="row"><b>AERO</b>'+esc(p.aero)+'</p>'+
+    '<div><button class="btn" type="button" id="clearSel">Show whole airplane</button></div>';
+  document.getElementById('clearSel').onclick = ()=>select(null);
+}
+ORDER.forEach(id=>{
+  const li=document.createElement('li');
+  const b=document.createElement('button');
+  b.type='button'; b.className='part'; b.dataset.id=id; b.setAttribute('aria-pressed','false');
+  b.innerHTML='<span class="n">'+String(PARTS[id].n).padStart(2,'0')+'</span><span>'+esc(PARTS[id].name)+'</span>';
+  b.onclick=()=>doSelect(sel===id?null:id,true);
+  li.appendChild(b); list.appendChild(li);
+});
+let doSelect=(id)=>{sel=id;renderInfo();list.querySelectorAll('.part').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===sel)));};
+renderInfo();
+
+if(!window.THREE || !THREE.OrbitControls){
+  const d=document.createElement('div'); d.className='err'; d.textContent='The 3D viewer could not load. The part notes on the right still work.';
+  document.getElementById('viewport').appendChild(d);
+  return;
+}
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const vp = document.getElementById('viewport');
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a1520);
+scene.fog = new THREE.Fog(0x0a1520, 70, 140);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+camera.position.set(26,15,30);
+const controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(-0.5,0,0);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 3; controls.maxDistance = 90;
+controls.autoRotateSpeed = 0.8;
+
+scene.add(new THREE.HemisphereLight(0xdfeaf5, 0x1a2a3a, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.95); sun.position.set(14,26,18); scene.add(sun);
+const rim = new THREE.DirectionalLight(0x8fb6d9, 0.45); rim.position.set(-20,6,-16); scene.add(rim);
+const grid = new THREE.GridHelper(80, 40, 0x2a4a68, 0x16283a); grid.position.y = -5.2; scene.add(grid);
+
+const lerp=(a,b,t)=>a+(b-a)*t;
+function af(u,t,m,p){
+  const yt=5*t*(0.2969*Math.sqrt(Math.max(u,0))-0.126*u-0.3516*u*u+0.2843*u*u*u-0.1036*u*u*u*u);
+  let yc=0; if(m>0) yc = u<p ? m/(p*p)*(2*p*u-u*u) : m/((1-p)*(1-p))*((1-2*p)+2*p*u-u*u);
+  return [yc+yt, yc-yt];
+}
+function ringAF(a,b,t,m,p,n){
+  n=n||18; const up=[],lo=[];
+  for(let i=0;i<=n;i++){const k=(1-Math.cos(Math.PI*i/n))/2, u=a+(b-a)*k, y=af(u,t,m,p); up.push([u,y[0]]); lo.push([u,y[1]]);}
+  return up.concat(lo.reverse());
+}
+function loft(secs, ring, map){
+  const pos=[], idx=[], J=ring.length;
+  secs.forEach(s=>ring.forEach(([u,v])=>pos.push(...map(s,u,v))));
+  for(let k=0;k<secs.length-1;k++) for(let j=0;j<J;j++){const a=k*J+j,b=k*J+(j+1)%J,c=a+J,d=b+J; idx.push(a,c,b,b,c,d);}
+  const uc=ring.reduce((s,p)=>s+p[0],0)/J, vc=ring.reduce((s,p)=>s+p[1],0)/J;
+  [0,secs.length-1].forEach(k=>{const base=pos.length/3; pos.push(...map(secs[k],uc,vc)); ring.forEach(([u,v])=>pos.push(...map(secs[k],u,v))); for(let j=0;j<J;j++) idx.push(base,base+1+j,base+1+(j+1)%J);});
+  const g=new THREE.BufferGeometry(); g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+const MAT = {
+  struct:{color:0xc7d2dc,metalness:.35,roughness:.45},
+  radome:{color:0x8e9daa,metalness:.1,roughness:.65},
+  surf:{color:0xf0b145,metalness:.2,roughness:.5},
+  prop:{color:0xef8a68,metalness:.3,roughness:.45},
+  dark:{color:0x17222d,metalness:.5,roughness:.3},
+  gear:{color:0x7b8894,metalness:.6,roughness:.35},
+  tire:{color:0x232b33,metalness:0,roughness:.9}
+};
+const meshes=[], pickables=[];
+function add(geo, mk, pid, ex, pos, noPick){
+  const m=new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign({side:THREE.DoubleSide},MAT[mk])));
+  if(pos) m.position.set(pos[0],pos[1],pos[2]);
+  m.userData={pid, base:m.position.clone(), ex:new THREE.Vector3(...(ex||[0,0,0])), baseColor:MAT[mk].color};
+  scene.add(m); meshes.push(m); if(!noPick) pickables.push(m); return m;
+}
+const addv=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+
+// Fuselage
+const fusProfile=[[0.001,-9.6],[0.24,-9.5],[0.46,-8.6],[0.7,-7.2],[0.92,-5.4],[1.0,-3.8],[1.0,4.6],[0.97,5.4],[0.89,6.0],[0.8,6.3],[0.001,6.3]].map(p=>new THREE.Vector2(p[0],p[1]));
+const fg=new THREE.LatheGeometry(fusProfile,48); fg.rotateZ(-Math.PI/2); add(fg,'struct','fuselage');
+const rg=new THREE.LatheGeometry([[0.8,0],[0.78,0.35],[0.68,0.8],[0.48,1.2],[0.22,1.5],[0.001,1.62]].map(p=>new THREE.Vector2(p[0],p[1])),40); rg.rotateZ(-Math.PI/2);
+add(rg,'radome','radome',[2.4,0,0],[6.3,0,0]);
+const ws=new THREE.BoxGeometry(0.55,0.08,1.05); const w=add(ws,'dark','radome',[0,0,0],[5.9,0.6,0]); w.rotation.z=-0.5;
+const winGeo=new THREE.BoxGeometry(0.16,0.2,0.04);
+for(let i=0;i<26;i++){const x=-4.2+i*0.34; add(winGeo,'dark','fuselage',null,[x,0.28,0.985],true); add(winGeo,'dark','fuselage',null,[x,0.28,-0.985],true);}
+// Pitot
+const pg=new THREE.CylinderGeometry(0.03,0.03,0.42,10); pg.rotateZ(Math.PI/2);
+add(pg,'gear','pitot',[0.8,0.5,1.4],[5.55,0.05,1.02]);
+const ps=new THREE.CylinderGeometry(0.025,0.025,0.2,8); ps.rotateX(Math.PI/2);
+add(ps,'gear','pitot',[0.8,0.5,1.4],[5.72,0.05,0.9]);
+
+// Wings
+const AF=ringAF(0,1,.12,.02,.4), up=u=>af(u,.12,.02,.4)[0];
+[1,-1].forEach(side=>{
+  const W=[0,0,side*2.6];
+  const map=(s,u,v)=>{const xLE=lerp(2.2,-4.18,s),c=lerp(5,1.5,s),y=lerp(-0.45,0.6,s),z=side*lerp(0.9,13,s);return [xLE-u*c,y+v*c,z];};
+  const piece=(a,b,s0,s1,mk,pid,ex)=>add(loft([s0,s1],ringAF(a,b,.12,.02,.4),map),mk,pid,ex);
+  piece(0.12,0.78,0,1,'struct','wing',W);
+  piece(0,0.12,0,0.15,'struct','wing',W); piece(0,0.12,0.92,1,'struct','wing',W);
+  piece(0,0.12,0.15,0.92,'surf','slats',addv(W,[1.0,0.05,0]));
+  piece(0.78,1,0,0.55,'surf','flaps',addv(W,[-1.1,-0.35,0]));
+  piece(0.78,1,0.55,0.6,'struct','wing',W); piece(0.78,1,0.88,1,'struct','wing',W);
+  piece(0.78,1,0.6,0.88,'surf','ailerons',addv(W,[-1.1,0.1,0]));
+  const sr=[[0.6,up(.6)+0.009],[0.76,up(.76)+0.009],[0.76,up(.76)+0.002],[0.6,up(.6)+0.002]];
+  [[0.22,0.32],[0.33,0.43],[0.44,0.54]].forEach(([a,b])=>add(loft([a,b],sr,map),'surf','spoilers',addv(W,[0,0.9,0])));
+  const wmap=(h,u,v)=>{const xLE=lerp(-4.3,-5.6,h),c=lerp(1.25,0.55,h),y=lerp(0.6,2.4,h),z=side*(13+0.45*h);return [xLE-u*c,y,z+side*v*c];};
+  add(loft([0,1],ringAF(0,1,.1,0,.4),wmap),'struct','winglet',addv(W,[0,1.0,side*0.9]));
+  // Engine
+  const EX=addv(W,[1.4,-1.8,0]);
+  const cowl=new THREE.LatheGeometry([[0.45,-1.9],[0.62,-1.4],[0.78,-0.4],[0.8,0.8],[0.76,1.6],[0.7,1.8]].map(p=>new THREE.Vector2(p[0],p[1])),36); cowl.rotateZ(-Math.PI/2);
+  add(cowl,'prop','nacelle',EX,[1.3,-1.2,side*4.9]);
+  const fan=new THREE.CircleGeometry(0.69,36); fan.rotateY(Math.PI/2); add(fan,'dark','nacelle',EX,[2.9,-1.2,side*4.9]);
+  const sp=new THREE.ConeGeometry(0.22,0.5,20); sp.rotateZ(-Math.PI/2); add(sp,'gear','nacelle',EX,[3.15,-1.2,side*4.9]);
+  const pl=new THREE.ConeGeometry(0.4,0.9,20); pl.rotateZ(Math.PI/2); add(pl,'gear','nacelle',EX,[-0.95,-1.2,side*4.9]);
+  add(new THREE.BoxGeometry(2.2,0.45,0.16),'prop','nacelle',addv(W,[0.6,-0.9,0]),[0.8,-0.25,side*4.9]);
+  // Horizontal stabilizer
+  const H=[-3.0,0,side*1.0];
+  const hmap=(s,u,v)=>{const xLE=lerp(-6.0,-8.2,s),c=lerp(2.6,1.1,s),y=lerp(0.35,0.75,s),z=side*lerp(0,5,s);return [xLE-u*c,y+v*c,z];};
+  add(loft([0,1],ringAF(0,0.7,.1,0,.4),hmap),'struct','hstab',H);
+  add(loft([0.04,0.97],ringAF(0.7,1,.1,0,.4),hmap),'surf','hstab',addv(H,[-0.9,0,0]));
+  add(loft([0.97,1],ringAF(0.7,1,.1,0,.4),hmap),'struct','hstab',H);
+  // Main gear
+  const G=[0,-2.2,0], gz=side*2.0;
+  add(new THREE.CylinderGeometry(0.16,0.16,0.9,14),'gear','gear',G,[0,-1.05,gz]);
+  add(new THREE.CylinderGeometry(0.1,0.1,0.9,12),'gear','gear',G,[0,-1.9,gz]);
+  const tg=new THREE.CylinderGeometry(0.48,0.48,0.3,24); tg.rotateX(Math.PI/2);
+  add(tg,'tire','gear',G,[0,-2.55,gz+0.28]); add(tg,'tire','gear',G,[0,-2.55,gz-0.28]);
+  const ax=new THREE.CylinderGeometry(0.06,0.06,0.9,8); ax.rotateX(Math.PI/2); add(ax,'gear','gear',G,[0,-2.55,gz]);
+});
+// Fin & rudder
+const F=[-3.0,2.0,0];
+const fmap=(s,u,v)=>{const xLE=lerp(-4.6,-8.4,s),c=lerp(3.8,1.4,s),y=lerp(0.6,6.0,s);return [xLE-u*c,y,v*c];};
+add(loft([0,1],ringAF(0,0.68,.1,0,.4),fmap),'struct','fin',F);
+add(loft([0.04,0.96],ringAF(0.68,1,.1,0,.4),fmap),'surf','fin',addv(F,[-0.9,0,0]));
+add(loft([0.96,1],ringAF(0.68,1,.1,0,.4),fmap),'struct','fin',F);
+// Nose gear
+const NG=[0,-2.2,0];
+add(new THREE.CylinderGeometry(0.08,0.08,1.6,12),'gear','gear',NG,[5.0,-1.55,0]);
+const ntg=new THREE.CylinderGeometry(0.32,0.32,0.2,20); ntg.rotateX(Math.PI/2);
+add(ntg,'tire','gear',NG,[5.0,-2.45,0.2]); add(ntg,'tire','gear',NG,[5.0,-2.45,-0.2]);
+
+// Label anchors: [assembled point, explode vector]
+const W1=[0,0,2.6], W2=[0,0,-2.6];
+const ANCH = {
+  radome:[[7.3,0.55,0],[2.4,0,0]], pitot:[[5.7,0.3,1.15],[0.8,0.5,1.4]], fuselage:[[-1,1.1,0],[0,0,0]],
+  wing:[[-3.4,0.5,-9.4],W2], slats:[[-1.2,0.25,7.6],addv(W1,[1,0.05,0])], flaps:[[-3.3,0,4.5],addv(W1,[-1.1,-0.35,0])],
+  spoilers:[[-2.7,0.2,-5.5],addv(W2,[0,0.9,0])], ailerons:[[-4.7,0.45,9.85],addv(W1,[-1.1,0.1,0])],
+  winglet:[[-5.0,1.7,13.25],addv(W1,[0,1,0.9])], nacelle:[[3.0,-1.2,-4.9],addv(W2,[1.4,-1.8,0])],
+  gear:[[0,-2.55,2.6],[0,-2.2,0]], empennage:[[-9.5,0.15,0],[-3,0,0]], hstab:[[-8.1,0.75,3.4],[-3,0,1]], fin:[[-7.9,4.2,0.2],[-3,2,0]]
+};
+const tagsEl=document.getElementById('tags'), tags={};
+ORDER.forEach(id=>{
+  const b=document.createElement('button'); b.type='button'; b.className='tag'+(PARTS[id].prop?' prop':''); b.textContent=PARTS[id].n;
+  b.setAttribute('aria-label',PARTS[id].name); b.setAttribute('aria-pressed','false');
+  b.onclick=()=>select(sel===id?null:id,true);
+  b.onmouseenter=()=>{hover=id;applyHighlight();}; b.onmouseleave=()=>{hover=null;applyHighlight();};
+  tagsEl.appendChild(b); tags[id]=b;
+});
+function anchorNow(id){const a=ANCH[id]; return new THREE.Vector3(a[0][0]+a[1][0]*ex, a[0][1]+a[1][1]*ex, a[0][2]+a[1][2]*ex);}
+
+function matches(pid,id){return id===pid || (id==='empennage' && EMP.has(pid));}
+function applyHighlight(){
+  meshes.forEach(m=>{
+    const pid=m.userData.pid, on=sel&&matches(pid,sel), hov=!on&&hover&&matches(pid,hover), dim=sel&&!on, mat=m.material;
+    mat.emissive.setHex(on||hov?m.userData.baseColor:0x000000);
+    mat.emissiveIntensity = on?0.32:(hov?0.2:0);
+    mat.transparent=!!dim; mat.opacity=dim?0.18:1; mat.depthWrite=!dim; mat.needsUpdate=true;
+  });
+  ORDER.forEach(id=>tags[id].setAttribute('aria-pressed',String(sel===id)));
+  list.querySelectorAll('.part').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.id===sel)));
+}
+
+// Camera tweening
+let tw=null;
+function flyTo(target,pos){ if(reduce){controls.target.copy(target);camera.position.copy(pos);tw=null;return;} tw={target,pos}; }
+controls.addEventListener('start',()=>{tw=null;});
+function select(id,focus){
+  sel=id; renderInfo(); applyHighlight();
+  if(id&&focus!==false){
+    const t=anchorNow(id), dir=camera.position.clone().sub(controls.target).normalize();
+    flyTo(t, t.clone().add(dir.multiplyScalar(PARTS[id].zoom)));
+  }
+}
+const VIEWS={iso:[26,15,30],top:[0.01,46,0.02],side:[-0.5,2,40],front:[40,3,0.01]};
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{const v=VIEWS[b.dataset.view]; flyTo(new THREE.Vector3(-0.5,0,0), new THREE.Vector3(v[0]-0.5,v[1],v[2]));});
+
+// Explode
+let ex=0, exTarget=0;
+const exBtn=document.getElementById('explodeBtn'), sep=document.getElementById('sep');
+function setExTarget(v){exTarget=v; exBtn.textContent=v>0.5?'Assemble':'Explode'; if(reduce) ex=v;}
+exBtn.onclick=()=>setExTarget(exTarget>0.5?0:1);
+sep.oninput=()=>{const v=sep.value/100; exTarget=v; ex=v; exBtn.textContent=v>0.5?'Assemble':'Explode';};
+const labelsBtn=document.getElementById('labelsBtn'); let showLabels=true;
+labelsBtn.onclick=()=>{showLabels=!showLabels; labelsBtn.setAttribute('aria-pressed',String(showLabels)); tagsEl.hidden=!showLabels;};
+const spinBtn=document.getElementById('spinBtn');
+spinBtn.onclick=()=>{controls.autoRotate=!controls.autoRotate; spinBtn.setAttribute('aria-pressed',String(controls.autoRotate));};
+
+// Picking
+const ray=new THREE.Raycaster(), ndc=new THREE.Vector2(), tip=document.getElementById('tip');
+function pick(e){const r=canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1); ray.setFromCamera(ndc,camera);
+  const hits=ray.intersectObjects(pickables,false);
+  return hits.length?hits[0].object.userData.pid:null;}
+let down=null;
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{ if(down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<5){const id=pick(e); select(id===sel?null:id,true);} down=null;});
+let lastMove=0;
+canvas.addEventListener('pointermove',e=>{
+  if(e.pointerType!=='mouse'||e.buttons) {tip.hidden=true; return;}
+  const now=performance.now(); if(now-lastMove<40) return; lastMove=now;
+  const id=pick(e); if(id!==hover){hover=id; applyHighlight();}
+  if(id){const r=vp.getBoundingClientRect(); tip.textContent=PARTS[id].n+' · '+PARTS[id].name; tip.hidden=false; tip.style.left=Math.min(e.clientX-r.left+14, r.width-tip.offsetWidth-8)+'px'; tip.style.top=(e.clientY-r.top+14)+'px';}
+  else tip.hidden=true;
+});
+canvas.addEventListener('pointerleave',()=>{tip.hidden=true; if(hover){hover=null;applyHighlight();}});
+
+function resize(){const w=vp.clientWidth,h=vp.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(vp); resize();
+
+const tmp=new THREE.Vector3();
+function frame(){
+  if(Math.abs(exTarget-ex)>0.0005){ex+= (exTarget-ex)*0.09; sep.value=Math.round(ex*100);} else if(ex!==exTarget){ex=exTarget; sep.value=Math.round(ex*100);}
+  meshes.forEach(m=>{m.position.copy(m.userData.base).addScaledVector(m.userData.ex,ex);});
+  if(tw){controls.target.lerp(tw.target,0.1); camera.position.lerp(tw.pos,0.1); if(camera.position.distanceTo(tw.pos)<0.02&&controls.target.distanceTo(tw.target)<0.02) tw=null;}
+  controls.update();
+  renderer.render(scene,camera);
+  if(showLabels){const w=vp.clientWidth,h=vp.clientHeight;
+    ORDER.forEach(id=>{tmp.copy(anchorNow(id)).project(camera); const b=tags[id];
+      if(tmp.z>1||tmp.z<-1){b.style.visibility='hidden';return;}
+      b.style.visibility='visible'; b.style.transform='translate('+((tmp.x+1)/2*w).toFixed(1)+'px,'+((1-tmp.y)/2*h).toFixed(1)+'px)';
+      b.style.opacity = sel&&!matches(id,sel)&&!(sel==='empennage'&&EMP.has(id))&&id!==sel ? '0.45':'1';});}
+  requestAnimationFrame(frame);
+}
+doSelect=select;
+applyHighlight();
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body></html>
